@@ -1,4 +1,4 @@
-- 👋 Hi, I’m @fbinliu
+- 👋 Hi, I’m Fangbin (@fbinliu)
 - 👀 I’m interested in security, dev-sec-ops, cloud security, security management and governance, security compliance, mobile security, docker security, infrastructure security,  application security life-cycle, 
 - 🌱 I’m currently learning Chef Inspec, AWS Security, DevSecOps tooling and automation, Ancible, Puppet, iOS security, Android Security, container (Docker and K8s) Security, Go, Kotlin, 
 - 💞️ I’m looking to collaborate on security automation in on-prem environment and Cloud, in CI/CD pipelines, in mobile security testing and monitoring, in container security.
