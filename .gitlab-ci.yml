@@ -1,0 +1,49 @@
+variables:
+  IMAGE_NAME: "localhost:5000/vulnerable-image"
+  DOCKER_TLS_CERTDIR: ""
+
+stages:
+  - lint
+  - scan
+
+container_image_lint:
+  stage: lint
+  ## use the image devsecopsacademy/hadolint:v2.7.0-alpine
+  image: devsecopsacademy/hadolint:v2.7.0-alpine
+  script:
+    ##<Put your Hadolint code here>
+    - hadolint Dockerfile 
+
+
+
+container_scanning:
+  stage: scan
+  image: docker:stable
+  variables:
+    DOCKER_DRIVER: overlay2
+  allow_failure: false
+  services:
+    - docker:stable-dind
+  script:
+    ## We start a local registry to push the image to
+    - docker run -d -p 5000:5000 --restart always --name registry registry:2
+    - docker build -t "$IMAGE_NAME" .
+    - docker push "$IMAGE_NAME"
+    - echo docker run -p 5432:5432 -d --name db arminc/clair-db:2020-07-17
+    - docker run -p 5432:5432 -d --name db arminc/clair-db:latest
+    - echo docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan:latest
+    - docker run -p 6060:6060 --link db:postgres -d --name clair arminc/clair-local-scan:latest
+    - apk add -U wget ca-certificates
+    - wget https://github.com/arminc/clair-scanner/releases/download/v12/clair-scanner_linux_amd64 
+    - mv clair-scanner_linux_amd64 clair-scanner && chmod +x ./clair-scanner
+     #create a new whitelist file to whitelist the rules
+    - touch clair-whitelist.yml
+    #Wait until the setup is ready
+    - while( ! wget -q -O /dev/null http://docker:6060/v1/namespaces ) ; do sleep 1 ; done
+    #Set the retries to 0
+    - retries=0
+    - echo "Waiting for clair daemon to start"
+    #Check if server is up. Total tries are 10.
+    - while( ! wget -T 10 -q -O /dev/null http://docker:6060/v1/namespaces ) ; do sleep 1 ; echo -n "." ; if [ $retries -eq 10 ] ; then echo " Timeout, aborting." ; exit 1 ; fi ; retries=$(($retries+1)) ; done
+    #Run the clair scanner to scan our docker image
+    - ./clair-scanner -t "Defcon1"  -c http://docker:6060 --ip $(hostname -i) "$IMAGE_NAME"

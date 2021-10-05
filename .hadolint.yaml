@@ -1,0 +1,3 @@
+trustedRegistries:
+  - quay.io
+  - docker.io
